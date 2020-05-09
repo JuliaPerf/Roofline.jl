@@ -1,0 +1,7 @@
+name = "Roofline"
+uuid = "d4e4e2e9-28a3-46a5-80e6-6c3e12a83ea5"
+authors = ["Valentin Churavy <v.churavy@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+LinuxPerf = "b4c46c6c-4fb0-484d-a11a-41bc3392d094"
