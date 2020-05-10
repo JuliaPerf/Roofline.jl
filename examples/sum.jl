@@ -2,17 +2,16 @@ using Roofline
 
 @noinline function experiment(A)
     acc = zero(eltype(A))
-    for i in eachindex(A)
-        acc += A[i]
-        A[i] = acc
+    @simd for i in eachindex(A)
+        @inbounds acc += A[i]
     end
     acc
 end
 
-function setup()
-    data = rand(1000000)
+function setup(N)
+    data = rand(N)
     return (data,)
 end
 
 bench = Roofline.RooflineBench(experiment, setup)
-bench()
+bench(2^27)

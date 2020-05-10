@@ -15,8 +15,8 @@ struct RooflineBench{F, S}
     RooflineBench(f::F, s::S) where {F, S} = new{F, S}(f, s, LinuxPerf.Counters[], UInt64[])
 end
 
-function (bench::RooflineBench{F, S})() where {F, S}
-    val = bench.func(bench.setup()...)
+function (bench::RooflineBench{F, S})(args...) where {F, S}
+    val = bench.func(bench.setup(args...)...)
     escape(val)
 
     for benchPerf in (intel_roofline_bw_use(),
@@ -24,7 +24,7 @@ function (bench::RooflineBench{F, S})() where {F, S}
                       intel_roofline_double(),
                       intel_roofline_single(), 
                       )
-        data = bench.setup()
+        data = bench.setup(args...)
         LinuxPerf.enable!(benchPerf)
         start = Base.time_ns()
         val = bench.func(data...)
