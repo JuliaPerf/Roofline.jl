@@ -1,14 +1,18 @@
 using Roofline 
 
-const bench = Roofline.intel_roofline_double()
-
-@noinline function g(A)
-    Roofline.enable!(bench)
+@noinline function experiment(A)
     acc = zero(eltype(A))
-    for x in A
-        acc += x
+    for i in eachindex(A)
+        acc += A[i]
+        A[i] = acc
     end
-    Roofline.disable!(bench)
     acc
 end
-g(rand(1000000))
+
+function setup()
+    data = rand(1000000)
+    return (data,)
+end
+
+bench = Roofline.RooflineBench(experiment, setup)
+bench()
