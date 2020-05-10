@@ -6,17 +6,16 @@ using LinuxPerf
     Base.inferencebarrier(nothing)::Nothing
 end
 
-struct RooflineBench{F, S}
-    func::F
-    setup::S
+struct RooflineBench
     counters::Vector{LinuxPerf.Counter}
     times::Vector{UInt64}
-
-    RooflineBench(f::F, s::S) where {F, S} = new{F, S}(f, s, LinuxPerf.Counters[], UInt64[])
+    repeats::Int64
 end
 
-function (bench::RooflineBench{F, S})(args...) where {F, S}
-    val = bench.func(bench.setup(args...)...)
+function benchmark(func::F, setup::S, args...; repeats=10) where {F, S}
+    counters = LinuxPerf.Counter[]
+    times = UInt64[]
+    val = func(setup(args...)...)
     escape(val)
 
     for benchPerf in (intel_roofline_bw_use(),
@@ -24,16 +23,19 @@ function (bench::RooflineBench{F, S})(args...) where {F, S}
                       intel_roofline_double(),
                       intel_roofline_single(), 
                       )
-        data = bench.setup(args...)
-        LinuxPerf.enable!(benchPerf)
-        start = Base.time_ns()
-        val = bench.func(data...)
-        stop = Base.time_ns()
-        LinuxPerf.disable!(benchPerf)
-        escape(val)
-        push!(bench.times, stop-start)
-        append!(bench.counters, LinuxPerf.counters(benchPerf).counters)
+        data = setup(args...)
+        for i in 1:repeats
+            LinuxPerf.enable!(benchPerf)
+            start = Base.time_ns()
+            val = func(data...)
+            stop = Base.time_ns()
+            LinuxPerf.disable!(benchPerf)
+            escape(val)
+            push!(times, stop-start)
+        end
+        append!(counters, LinuxPerf.counters(benchPerf).counters)
     end
+    return RooflineBench(counters, times, repeats)
 end
 
 function Base.show(io::IO, bench::RooflineBench)
@@ -43,11 +45,11 @@ function Base.show(io::IO, bench::RooflineBench)
    show(io, "Mean duration $(t)s")
    println(io)
    results = summarize_intel(bench)
-   show(io, "Double GFLOP/s $(results.dflops/t * 1e-9) ")
+   show(io, "Double GFLOP/s $(results.dflops/t/bench.repeats * 1e-9) ")
    println(io)
-   show(io, "Single GFLOP/s $(results.sflops/t * 1e-9)")
+   show(io, "Single GFLOP/s $(results.sflops/t/bench.repeats * 1e-9)")
    println(io)
-   show(io, "DRAM BW GB/s $(64*results.bw_ops / t * 1e-9)") # cachelines to GB/s
+   show(io, "DRAM BW GB/s $(64*results.bw_ops / t / bench.repeats* 1e-9)") # cachelines to GB/s
    println(io)
    show(io, "MemOP per FLOP: $(results.mops / (results.sflops + results.dflops))")
    println(io)

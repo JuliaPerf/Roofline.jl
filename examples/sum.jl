@@ -9,9 +9,8 @@ using Roofline
 end
 
 function setup(N)
-    data = rand(N)
+    data = rand(Float32, N)
     return (data,)
 end
 
-bench = Roofline.RooflineBench(experiment, setup)
-bench(2^27)
+bench = Roofline.benchmark(experiment, setup, 2^27)
