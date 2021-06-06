@@ -145,6 +145,12 @@ const intel_roofline_events_bw_use = [
     ]
 ]
 
+function intel_roofline_bw_use()
+    LinuxPerf.make_bench(intel_roofline_events_bw_use)
+end
+function intel_roofline_memory()
+    LinuxPerf.make_bench(intel_roofline_events_memory)
+end
 function intel_roofline_double()
     LinuxPerf.make_bench(intel_roofline_events_double)
 end
